@@ -1,0 +1,28 @@
+{
+  "name": "cs2_wiki_api",
+  "version": "1.0.0",
+  "description": "API RESTful para una Wiki de armas de Counter-Strike 2",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "postgresql",
+    "rest-api",
+    "cs2"
+  ],
+  "author": "Javier",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
