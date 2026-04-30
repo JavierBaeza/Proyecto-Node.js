@@ -10,18 +10,18 @@ services:
     container_name: cs2_wiki_db
     restart: unless-stopped # Se reinicia automáticamente salvo que lo detengamos a mano
     environment:
-      POSTGRES_DB: cs2_wiki_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${PGDATABASE} # Nombre de la BD, tomado del .env
+      POSTGRES_USER: ${PGUSER} # Usuario, tomado del .env
+      POSTGRES_PASSWORD: ${PGPASSWORD} # Contraseña, tomada del .env
     ports:
-      - "5432:5432" # Expone el puerto para conectarse desde pgAdmin local
+      - "${EXTERNAL_DB_PORT}:5432" # Expone el puerto para conectarse desde pgAdmin local
     volumes:
       # Persistencia de datos: aunque el contenedor se detenga, los datos sobreviven
       - postgres_data:/var/lib/postgresql/data
       # Script de inicialización: se ejecuta automáticamente la primera vez
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d cs2_wiki_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -33,16 +33,10 @@ services:
     container_name: cs2_wiki_app
     restart: unless-stopped
     ports:
-      - "3000:3000" # La API estará en http://localhost:3000
-    environment:
-      # Variables de conexión a la BD — apuntan al servicio 'db' definido arriba
-      # Docker Compose resuelve 'db' como hostname automáticamente dentro de la red interna
-      PGHOST: db
-      PGPORT: 5432
-      PGDATABASE: cs2_wiki_db
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      PORT: 3000
+      - "${PORT}:${PORT}" # La API estará en http://localhost:3000
+    env_file: 
+      - .env # Carga las variables de entorno desde el archivo .env
+     
     depends_on:
       db:
         condition: service_healthy # Espera a que PostgreSQL esté listo antes de iniciar la app
