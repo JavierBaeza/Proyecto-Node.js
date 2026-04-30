@@ -98,16 +98,26 @@ const validarCargador = (req, res, next) => {
 
 // validarCategoria — PUT /categorias/:id
 const validarCategoria = (req, res, next) => {
-    const { nombre } = req.body;
+    const { nombre, descripcion} = req.body;
+    const errores = [];
 
-    if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
-        return res.status(400).json({
-            errores: ['nombre es obligatorio y debe ser texto.']
-        });
+   if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
+        errores.push('nombre es obligatorio y debe ser texto.');
+    }
+  
+    // NUEVA VALIDACIÓN: Obligamos a que la envíen la descripcion y no sea vacia 
+    if (!descripcion || typeof descripcion !== 'string' || descripcion.trim() === '') {
+        errores.push('descripcion es obligatoria y debe ser texto.');
+    }
+     
+      
+      if (errores.length > 0) {
+        return res.status(400).json({ errores });
     }
 
-    // Persistimos el nombre limpio
+    // Persistimos el nombre y la descripción limpios
     req.body.nombre = nombre.trim();
+    req.body.descripcion = descripcion.trim();
 
     next();
 };
