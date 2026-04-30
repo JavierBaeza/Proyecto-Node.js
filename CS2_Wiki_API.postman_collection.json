@@ -1,0 +1,302 @@
+{
+	"info": {
+		"name": "CS2 Wiki API",
+		"description": "Colección completa para probar los 10 endpoints de la CS2 Wiki.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "GET",
+			"item": [
+				{
+					"name": "1. GET todas las armas",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/armas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas"
+							]
+						},
+						"description": "Devuelve todas las armas con su categoría (JOIN). Esperado: 200 OK + array de armas."
+					}
+				},
+				{
+					"name": "2. GET arma por ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/armas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"1"
+							]
+						},
+						"description": "Devuelve el detalle de un arma con sus skins. Cambia el '1' por otro id para probar. Esperado: 200 OK. Con id inexistente: 404."
+					}
+				}
+			]
+		},
+		{
+			"name": "POST",
+			"item": [
+				{
+					"name": "3. POST crear arma",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/armas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"AWP\",\n  \"bando\": \"AM\",\n  \"precio\": 4750,\n  \"dano_base\": 115,\n  \"balas_cargador\": 10\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Crea una nueva arma. Esperado: 201 Created + objeto del arma creada.\n\nPruebas adicionales:\n- Omite un campo → debe responder 400 con lista de errores\n- Repite el mismo nombre → debe responder 400 UNIQUE violation\n- Usa id_categoria inexistente → debe responder 400 FK violation\n- Usa bando inválido (ej: 'X') → debe responder 400"
+					}
+				},
+				{
+					"name": "4. POST crear skin para un arma",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/armas/1/skins",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"1",
+								"skins"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre_skin\": \"Dragon Lore\",\n  \"rareza\": \"Covert\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Crea una skin vinculada al arma con id=1. Cambia el id en la URL según necesites.\n\nPruebas adicionales:\n- Usa rareza inválida (ej: 'Legendaria') → debe responder 400\n- Usa id de arma inexistente (ej: /armas/999/skins) → debe responder 404"
+					}
+				}
+			]
+		},
+		{
+			"name": "PUT",
+			"item": [
+				{
+					"name": "5. PUT reemplazar arma completa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/armas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"1"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"AK-47\",\n  \"bando\": \"T\",\n  \"precio\": 2900,\n  \"dano_base\": 36,\n  \"balas_cargador\": 30\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Reemplaza TODOS los campos del arma. Si omites algún campo, el middleware responde 400. Esperado: 200 OK + arma actualizada."
+					}
+				},
+				{
+					"name": "6. PUT reemplazar categoría completa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categorias/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categorias",
+								"1"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Rifles de Asalto\",\n  \"descripcion\": \"Rifles de alta potencia para combate a media y larga distancia.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Reemplaza nombre y descripción de una categoría. Esperado: 200 OK + categoría actualizada."
+					}
+				}
+			]
+		},
+		{
+			"name": "PATCH",
+			"item": [
+				{
+					"name": "7. PATCH actualizar precio",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/armas/1/precio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"1",
+								"precio"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"precio\": 2500\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Modifica SOLO el precio del arma. El resto de campos permanece intacto.\n\nPruebas adicionales:\n- Envía precio negativo (ej: -100) → debe responder 400\n- Omite el campo precio → debe responder 400"
+					}
+				},
+				{
+					"name": "8. PATCH actualizar balas del cargador",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/armas/1/cargador",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"1",
+								"cargador"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"balas_cargador\": 35\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Modifica SOLO las balas_cargador del arma. El resto permanece intacto.\n\nPrueba adicional:\n- Envía balas_cargador = 0 → debe responder 400"
+					}
+				}
+			]
+		},
+		{
+			"name": "DELETE",
+			"item": [
+				{
+					"name": "9. DELETE eliminar arma",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/armas/3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"armas",
+								"3"
+							]
+						},
+						"description": "Elimina el arma con id=3 y sus skins en cascada (ON DELETE CASCADE).\n⚠️ Usa un id que exista. Tras ejecutarlo, haz GET /armas para confirmar.\nEsperado: 200 OK + mensaje de confirmación.\nCon id inexistente: 404."
+					}
+				},
+				{
+					"name": "10. DELETE eliminar skin",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/skins/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"skins",
+								"1"
+							]
+						},
+						"description": "Elimina la skin con id=1. Solo borra la skin, no el arma.\nEsperado: 200 OK + mensaje de confirmación.\nCon id inexistente: 404."
+					}
+				}
+			]
+		}
+	]
+}

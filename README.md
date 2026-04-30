@@ -8,19 +8,21 @@ Proyecto desarrollado para la asignatura de Node.js.
 
 ## Tecnologías utilizadas
 
-- **Node.js** — entorno de ejecución
-- **Express.js** — framework web para definir rutas y middlewares
+- **Node.js 20 LTS** — entorno de ejecución
+- **Express.js 5** — framework web para definir rutas y middlewares
 - **pg (node-postgres)** — cliente PostgreSQL para consultas SQL puras
 - **dotenv** — gestión de variables de entorno
+- **Docker & Docker Compose** — contenerización de la app y la base de datos
+- **PostgreSQL 16** — motor de base de datos relacional
 
 ---
 
 ## Estructura del proyecto
 
 ```
-cs2_wiki/
+Proyecto-Node.js/
 ├── docker/
-│   └── init.sql                   # Script de inicialización de la base de datos
+│   └── init.sql                   # Script de inicialización automática de la BD
 ├── src/
 │   ├── config/
 │   │   └── db.js                  # Pool de conexiones a PostgreSQL
@@ -34,64 +36,81 @@ cs2_wiki/
 ├── .env                           # Variables de entorno (no subir a Git)
 ├── .env.example                   # Ejemplo de variables de entorno
 ├── .gitignore                     # Archivos ignorados por Git
-├── docker-compose.yml             # Configuración de servicios Docker (App, BD, etc.)
+├── docker-compose.yml             # Configuración de servicios Docker (App + BD)
 ├── Dockerfile                     # Instrucciones para construir la imagen Docker
 ├── ENDPOINTS.md                   # Documentación detallada de los endpoints
+├── CS2_Wiki_API.postman_collection.json  # Colección Postman lista para importar
 ├── package-lock.json              # Árbol de versiones exactas de dependencias
 └── package.json                   # Dependencias y scripts del proyecto
 ```
 
 ---
 
-## Instalación y configuración
+## Instalación y puesta en marcha
+
+> **Requisitos previos:** tener instalados [Docker Desktop](https://www.docker.com/products/docker-desktop/) y [Git](https://git-scm.com/).  
+> No es necesario instalar Node.js ni PostgreSQL de forma local.
 
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/cs2_wiki.git
-cd cs2_wiki
+git clone https://github.com/tu-usuario/Proyecto-Node.js.git
+cd Proyecto-Node.js
 ```
 
-### 2. Instalar dependencias
+### 2. Configurar variables de entorno
+
+Copia el archivo de ejemplo y renómbralo a `.env`:
 
 ```bash
-npm install
+cp .env.example .env
 ```
 
-### 3. Configurar variables de entorno
-
-Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
+Edita el archivo `.env` con tus valores. La estructura debe ser la siguiente:
 
 ```env
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=cs2_wiki_db
-PGUSER=postgres
+# Configuracion de PostgreSQL
+PGUSER=tu_usuario
 PGPASSWORD=tu_contraseña
+PGDATABASE=cs2_wiki_db
+
+# Configuracion de la App Node.js
+# PGHOST debe ser "db" porque es el nombre del contenedor en la red de Docker
+PGHOST=db
+PGPORT=5432 #Asegurate que no sea un puerto que ya estes ocupando
 PORT=3000
+
+# Puerto externo para conectarte desde DBeaver o pgAdmin en Windows
+EXTERNAL_DB_PORT=5434
 ```
 
-### 4. Crear la base de datos
+> **Importante:**  
+> - `PGHOST=db` es obligatorio. `db` es el nombre del servicio PostgreSQL dentro de la red interna de Docker.  
+> - `EXTERNAL_DB_PORT` es el puerto que se expone en tu máquina Windows para conectarte con herramientas como DBeaver o pgAdmin. Asegúrate de que no esté ocupado por otro proceso.
 
-Ejecuta el script `cs2_wiki_schema.sql` en pgAdmin o psql:
+### 3. Levantar los contenedores con Docker Compose
 
 ```bash
-psql -U postgres -d cs2_wiki_db -f cs2_wiki_schema.sql
+docker compose up --build
 ```
 
-Esto creará las tablas `categorias`, `armas` y `skins`, e insertará los datos de semilla.
+Este comando:
+1. Construye la imagen de la API Node.js desde el `Dockerfile`.
+2. Descarga la imagen oficial de PostgreSQL 16.
+3. Ejecuta automáticamente `docker/init.sql`, creando las tablas `categorias`, `armas` y `skins` e insertando los datos de semilla.
+4. Inicia ambos contenedores. La API espera a que la base de datos esté lista antes de arrancar.
 
-### 5. Iniciar el servidor
-
-```bash
-node src/app.js
-```
-
-Deberías ver en consola:
+Una vez levantados, deberías ver en la consola:
 
 ```
-Conexión a PostgreSQL establecida correctamente.
 CS2 Wiki API corriendo en http://localhost:3000
+Endpoints disponibles bajo: http://localhost:3000/api
+```
+
+Para detener los contenedores:
+
+```bash
+docker compose down
 ```
 
 ---
@@ -114,7 +133,7 @@ categorias (1) ──── (N) armas (1) ──── (N) skins
 
 | Relación | ON DELETE |
 |---|---|
-| `armas → categorias` | `RESTRICT` — no se puede borrar una categoría con armas |
+| `armas → categorias` | `RESTRICT` — no se puede borrar una categoría que tenga armas |
 | `skins → armas` | `CASCADE` — al borrar un arma, sus skins se eliminan automáticamente |
 
 ---
@@ -136,7 +155,7 @@ La API base es: `http://localhost:3000/api`
 | DELETE | `/armas/:id` | Eliminar un arma (y sus skins en cascada) |
 | DELETE | `/skins/:id` | Eliminar una skin |
 
-Consulta el archivo `ENDPOINTS.md` para ver el detalle completo de cada endpoint.
+Consulta el archivo `ENDPOINTS.md` para ver el detalle completo de cada endpoint (body, respuestas y códigos de estado).
 
 ---
 
@@ -148,11 +167,25 @@ El proyecto sigue una arquitectura de **3 capas**:
 Request → Router → Middleware de validación → Controlador → PostgreSQL → Response
 ```
 
-- **Router** (`routes/`): solo define la URL y el método HTTP
-- **Middleware** (`middlewares/`): valida el body antes de llegar al controlador
-- **Controlador** (`controllers/`): ejecuta la consulta SQL y responde
+- **Router** (`routes/`): define la URL y el método HTTP.
+- **Middleware** (`middlewares/`): valida el body antes de llegar al controlador.
+- **Controlador** (`controllers/`): ejecuta la consulta SQL y retorna la respuesta.
 
 Los errores se propagan con `next(error)` hasta el **manejador global** al final de `app.js`, evitando repetir bloques `try/catch` con lógica de respuesta en cada endpoint.
+
+---
+
+## Conexión desde DBeaver o pgAdmin (opcional)
+
+Si quieres inspeccionar la base de datos desde una herramienta gráfica en tu máquina local, usa los siguientes datos de conexión:
+
+| Campo | Valor |
+|---|---|
+| Host | `localhost` |
+| Puerto | El valor de `EXTERNAL_DB_PORT` en tu `.env` (por defecto `5434`) |
+| Base de datos | El valor de `PGDATABASE` (por defecto `cs2_wiki_db`) |
+| Usuario | El valor de `PGUSER` |
+| Contraseña | El valor de `PGPASSWORD` |
 
 ---
 
