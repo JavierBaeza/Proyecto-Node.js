@@ -61,6 +61,33 @@ const createSubcategoria = async (req, res, next) => {
     }
 };
 
+// PUT /api/subcategorias/:id — Reemplaza todos los campos de una subcategoría
+const replaceSubcategoria = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!validarIdParam(id, next)) return;
+
+        const { id_categoria, nombre, descripcion } = req.body;
+        const result = await db.query(
+            `UPDATE subcategorias
+             SET id_categoria=$1, nombre=$2, descripcion=$3
+             WHERE id=$4
+             RETURNING *`,
+            [id_categoria, nombre, descripcion, id]
+        );
+
+        if (result.rowCount === 0) {
+            const err = new Error(`Subcategoría con id ${id} no encontrada.`);
+            err.status = 404;
+            return next(err);
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        manejarErrorPg(error, next);
+    }
+};
+
 // DELETE /api/subcategorias/:id — Elimina una subcategoría (armas asociadas quedan con id_subcategoria = NULL)
 const deleteSubcategoria = async (req, res, next) => {
     try {
@@ -89,5 +116,6 @@ const deleteSubcategoria = async (req, res, next) => {
 module.exports = {
     getSubcategoriasWithArmas,
     createSubcategoria,
+    replaceSubcategoria,
     deleteSubcategoria
 };

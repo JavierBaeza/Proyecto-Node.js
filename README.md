@@ -154,6 +154,7 @@ La API base es: `http://localhost:3000/api`
 | PATCH | `/armas/:id/cargador` | Actualizar solo las balas del cargador |
 | DELETE | `/armas/:id` | Eliminar un arma (y sus skins en cascada) |
 | DELETE | `/skins/:id` | Eliminar una skin |
+| PUT | `/subcategorias/:id` | Reemplazar todos los datos de una subcategoría |
 
 Consulta el archivo `ENDPOINTS.md` para ver el detalle completo de cada endpoint (body, respuestas y códigos de estado).
 
@@ -191,7 +192,7 @@ Si quieres inspeccionar la base de datos desde una herramienta gráfica en tu m�
 
 ## Colección Postman
 
-Importa el archivo `CS2_Wiki_API.postman_collection.json` en Postman para tener los 10 endpoints listos con sus bodies configurados.
+Importa el archivo `CS2_Wiki_API.postman_collection.json` en Postman para tener los 20 endpoints listos con sus bodies configurados.
 
 **File → Import → selecciona el archivo `.json`**
 

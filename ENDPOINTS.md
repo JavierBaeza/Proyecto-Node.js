@@ -30,6 +30,7 @@ Content-Type: application/json
 17. [PATCH /categorias/:id/descripcion](#17-patch-categoriasiddescripcion)
 18. [DELETE /categorias/:id](#18-delete-categoriasid)
 19. [DELETE /subcategorias/:id](#19-delete-subcategoriasid)
+20. [PUT /subcategorias/:id](#20-put-subcategoriasid)
 
 ---
 
@@ -474,5 +475,49 @@ DELETE /api/subcategorias/4
 ```json
 {
   "message": "Subcategoría \"Fusiles de Tirador\" eliminada correctamente."
+}
+```
+
+---
+
+## 20. PUT /subcategorias/:id
+
+Reemplaza **todos** los atributos de una subcategoría.
+
+**Request**
+```
+PUT /api/subcategorias/1
+```
+
+**Body**
+```json
+{
+  "id_categoria": 1,
+  "nombre": "Rifles de Asalto Pesados",
+  "descripcion": "Rifles automáticos de alto calibre para combate de medio alcance."
+}
+```
+
+| Campo | Tipo | Restricciones |
+|---|---|---|
+| `id_categoria` | integer | Obligatorio. Debe existir en tabla `categorias` |
+| `nombre` | string | Obligatorio. Único en la tabla |
+| `descripcion` | string/null | Opcional. Texto descriptivo |
+
+**Response 200 OK**
+```json
+{
+  "id": 1,
+  "id_categoria": 1,
+  "nombre": "Rifles de Asalto Pesados",
+  "descripcion": "Rifles automáticos de alto calibre para combate de medio alcance."
+}
+```
+
+**Response 404 Not Found**
+```json
+{
+  "error": "Subcategoría con id 999 no encontrada.",
+  "status": 404
 }
 ```
