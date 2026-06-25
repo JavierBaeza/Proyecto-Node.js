@@ -154,6 +154,15 @@ La API base es: `http://localhost:3000/api`
 | PATCH | `/armas/:id/cargador` | Actualizar solo las balas del cargador |
 | DELETE | `/armas/:id` | Eliminar un arma (y sus skins en cascada) |
 | DELETE | `/skins/:id` | Eliminar una skin |
+| GET | `/categorias` | Obtener la lista de todas las categorías |
+| GET | `/subcategorias/armas` | Obtener la lista de subcategorías con sus armas |
+| POST | `/categorias` | Crear una nueva categoría |
+| POST | `/subcategorias` | Crear una nueva subcategoría |
+| PUT | `/skins/:id` | Reemplazar el nombre y la rareza de una skin |
+| PATCH | `/skins/:id/rareza` | Actualizar únicamente la rareza de una skin |
+| PATCH | `/categorias/:id/descripcion` | Actualizar únicamente la descripción de una categoría |
+| DELETE | `/categorias/:id` | Eliminar una categoría |
+| DELETE | `/subcategorias/:id` | Eliminar una subcategoría |
 | PUT | `/subcategorias/:id` | Reemplazar todos los datos de una subcategoría |
 
 Consulta el archivo `ENDPOINTS.md` para ver el detalle completo de cada endpoint (body, respuestas y códigos de estado).

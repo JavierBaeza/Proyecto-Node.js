@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "CS2 Wiki API",
-		"description": "Colección completa para probar los 19 endpoints de la CS2 Wiki.",
+		"description": "Colección completa para probar los 20 endpoints de la CS2 Wiki.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -311,6 +311,38 @@
 							}
 						},
 						"description": "Actualiza el nombre y rareza de una skin."
+					}
+				},
+				{
+					"name": "20. PUT reemplazar subcategoría completa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/subcategorias/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"subcategorias",
+								"1"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"Rifles de Asalto Pesados\",\n  \"descripcion\": \"Rifles automáticos de alto calibre para combate de medio alcance.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Reemplaza todos los datos de una subcategoría."
 					}
 				}
 			]
