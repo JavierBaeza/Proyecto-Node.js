@@ -21,12 +21,21 @@ Content-Type: application/json
 8. [PATCH /armas/:id/cargador](#8-patch-armasidcargador)
 9. [DELETE /armas/:id](#9-delete-armasid)
 10. [DELETE /skins/:id](#10-delete-skinsid)
+11. [GET /categorias](#11-get-categorias)
+12. [GET /subcategorias/armas](#12-get-subcategoriasarmas)
+13. [POST /categorias](#13-post-categorias)
+14. [POST /subcategorias](#14-post-subcategorias)
+15. [PUT /skins/:id](#15-put-skinsid)
+16. [PATCH /skins/:id/rareza](#16-patch-skinsidrareza)
+17. [PATCH /categorias/:id/descripcion](#17-patch-categoriasiddescripcion)
+18. [DELETE /categorias/:id](#18-delete-categoriasid)
+19. [DELETE /subcategorias/:id](#19-delete-subcategoriasid)
 
 ---
 
 ## 1. GET /armas
 
-Devuelve todas las armas registradas con el nombre de su categoría.
+Devuelve todas las armas registradas con su categoría, subcategoría y listado de skins.
 
 **Request**
 ```
@@ -43,16 +52,14 @@ GET /api/armas
     "precio": "2700.00",
     "dano_base": 36,
     "balas_cargador": 30,
-    "categoria": "Rifles"
-  },
-  {
-    "id": 2,
-    "nombre": "M4A4",
-    "bando": "CT",
-    "precio": "3100.00",
-    "dano_base": 33,
-    "balas_cargador": 30,
-    "categoria": "Rifles"
+    "categoria": "Rifles",
+    "subcategoria": "Rifles de Asalto",
+    "id_subcategoria": 1,
+    "id_categoria": 1,
+    "skins": [
+      { "id": 1, "nombre_skin": "Asiimov", "rareza": "Covert" },
+      { "id": 2, "nombre_skin": "Redline", "rareza": "Classified" }
+    ]
   }
 ]
 ```
@@ -73,12 +80,14 @@ GET /api/armas/1
 {
   "id": 1,
   "id_categoria": 1,
+  "id_subcategoria": 1,
   "nombre": "AK-47",
   "bando": "T",
   "precio": "2700.00",
   "dano_base": 36,
   "balas_cargador": 30,
   "categoria": "Rifles",
+  "subcategoria": "Rifles de Asalto",
   "skins": [
     { "id": 1, "nombre_skin": "Asiimov", "rareza": "Covert" },
     { "id": 2, "nombre_skin": "Redline", "rareza": "Classified" }
@@ -98,7 +107,7 @@ GET /api/armas/1
 
 ## 3. POST /armas
 
-Crea una nueva arma en la base de datos.
+Crea una nueva arma en la base de datos. Permite asociarla opcionalmente a una subcategoría (`id_subcategoria`).
 
 **Request**
 ```
@@ -109,6 +118,7 @@ POST /api/armas
 ```json
 {
   "id_categoria": 1,
+  "id_subcategoria": 1,
   "nombre": "AWP",
   "bando": "AM",
   "precio": 4750,
@@ -120,6 +130,7 @@ POST /api/armas
 | Campo | Tipo | Restricciones |
 |---|---|---|
 | `id_categoria` | integer | Debe existir en tabla `categorias` |
+| `id_subcategoria` | integer (opcional) | Debe pertenecer a la misma `id_categoria` si se especifica |
 | `nombre` | string | Único en la tabla |
 | `bando` | string | Solo `"CT"`, `"T"` o `"AM"` |
 | `precio` | number | Mayor o igual a 0 |
@@ -131,29 +142,12 @@ POST /api/armas
 {
   "id": 4,
   "id_categoria": 1,
+  "id_subcategoria": 1,
   "nombre": "AWP",
   "bando": "AM",
   "precio": "4750.00",
   "dano_base": 115,
   "balas_cargador": 10
-}
-```
-
-**Response 400 Bad Request — validación**
-```json
-{
-  "errores": [
-    "nombre es obligatorio y debe ser texto.",
-    "bando es obligatorio. Valores permitidos: CT, T, AM."
-  ]
-}
-```
-
-**Response 400 Bad Request — nombre duplicado**
-```json
-{
-  "error": "Ya existe un registro con ese nombre.",
-  "status": 400
 }
 ```
 
@@ -176,37 +170,11 @@ POST /api/armas/1/skins
 }
 ```
 
-| Campo | Tipo | Restricciones |
-|---|---|---|
-| `nombre_skin` | string | Único por arma |
-| `rareza` | string | Ver valores permitidos abajo |
-
-**Valores de rareza permitidos:**
-`Consumer` · `Industrial` · `Mil-Spec` · `Restricted` · `Classified` · `Covert` · `Contraband`
-
-**Response 201 Created**
-```json
-{
-  "id": 4,
-  "id_arma": 1,
-  "nombre_skin": "Dragon Lore",
-  "rareza": "Covert"
-}
-```
-
-**Response 404 Not Found — arma no existe**
-```json
-{
-  "error": "El arma con id 999 no existe.",
-  "status": 404
-}
-```
-
 ---
 
 ## 5. PUT /armas/:id
 
-Reemplaza **todos** los atributos de un arma. Todos los campos son obligatorios.
+Reemplaza todos los atributos de un arma.
 
 **Request**
 ```
@@ -217,32 +185,12 @@ PUT /api/armas/1
 ```json
 {
   "id_categoria": 1,
+  "id_subcategoria": 1,
   "nombre": "AK-47",
   "bando": "T",
   "precio": 2900,
   "dano_base": 36,
   "balas_cargador": 30
-}
-```
-
-**Response 200 OK**
-```json
-{
-  "id": 1,
-  "id_categoria": 1,
-  "nombre": "AK-47",
-  "bando": "T",
-  "precio": "2900.00",
-  "dano_base": 36,
-  "balas_cargador": 30
-}
-```
-
-**Response 404 Not Found**
-```json
-{
-  "error": "Arma con id 999 no encontrada.",
-  "status": 404
 }
 ```
 
@@ -265,53 +213,11 @@ PUT /api/categorias/1
 }
 ```
 
-| Campo | Tipo | Restricciones |
-|---|---|---|
-| `nombre` | string |
-| `descripcion` | string |  (puede ser null) |
-
-**Response 200 OK**
-```json
-{
-  "id": 1,
-  "nombre": "Rifles de Asalto",
-  "descripcion": "Rifles de alta potencia para combate a media y larga distancia."
-}
-```
-
 ---
 
 ## 7. PATCH /armas/:id/precio
 
-Modifica **únicamente** el precio de un arma. El resto de campos no se toca.
-
-**Request**
-```
-PATCH /api/armas/1/precio
-```
-
-**Body**
-```json
-{
-  "precio": 2500
-}
-```
-
-**Response 200 OK**
-```json
-{
-  "id": 1,
-  "nombre": "AK-47",
-  "precio": "2500.00"
-}
-```
-
-**Response 400 Bad Request**
-```json
-{
-  "errores": ["precio es obligatorio y debe ser un número >= 0."]
-}
-```
+Modifica **únicamente** el precio de un arma.
 
 ---
 
@@ -319,15 +225,155 @@ PATCH /api/armas/1/precio
 
 Modifica **únicamente** las balas del cargador de un arma.
 
+---
+
+## 9. DELETE /armas/:id
+
+Elimina un arma (borrado en cascada para skins).
+
+---
+
+## 10. DELETE /skins/:id
+
+Elimina una skin por su ID.
+
+---
+
+## 11. GET /categorias
+
+Obtiene la lista de todas las categorías con la cantidad de armas asociadas a cada una.
+
 **Request**
 ```
-PATCH /api/armas/1/cargador
+GET /api/categorias
+```
+
+**Response 200 OK**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Rifles",
+    "descripcion": "Rifles de asalto y francotiradoras...",
+    "cantidad_armas": 2
+  },
+  {
+    "id": 2,
+    "nombre": "Pistolas",
+    "descripcion": "Armas secundarias...",
+    "cantidad_armas": 1
+  }
+]
+```
+
+---
+
+## 12. GET /subcategorias/armas
+
+Obtiene la lista de subcategorías con un arreglo de las respectivas armas asignadas a cada una.
+
+**Request**
+```
+GET /api/subcategorias/armas
+```
+
+**Response 200 OK**
+```json
+[
+  {
+    "id": 1,
+    "id_categoria": 1,
+    "categoria": "Rifles",
+    "nombre": "Rifles de Asalto",
+    "descripcion": "Rifles automáticos...",
+    "armas": [
+      {
+        "id": 1,
+        "nombre": "AK-47",
+        "bando": "T",
+        "precio": "2700.00",
+        "dano_base": 36,
+        "balas_cargador": 30
+      }
+    ]
+  }
+]
+```
+
+---
+
+## 13. POST /categorias
+
+Crea una nueva categoría.
+
+**Request**
+```
+POST /api/categorias
 ```
 
 **Body**
 ```json
 {
-  "balas_cargador": 35
+  "nombre": "Granadas",
+  "descripcion": "Equipamiento arrojadizo y utilidades tácticas."
+}
+```
+
+**Response 201 Created**
+```json
+{
+  "id": 4,
+  "nombre": "Granadas",
+  "descripcion": "Equipamiento arrojadizo y utilidades tácticas."
+}
+```
+
+---
+
+## 14. POST /subcategorias
+
+Crea una nueva subcategoría vinculada a una categoría principal.
+
+**Request**
+```
+POST /api/subcategorias
+```
+
+**Body**
+```json
+{
+  "id_categoria": 1,
+  "nombre": "Fusiles de Tirador",
+  "descripcion": "Fusiles semiautomáticos de precisión."
+}
+```
+
+**Response 201 Created**
+```json
+{
+  "id": 4,
+  "id_categoria": 1,
+  "nombre": "Fusiles de Tirador",
+  "descripcion": "Fusiles semiautomáticos de precisión."
+}
+```
+
+---
+
+## 15. PUT /skins/:id
+
+Reemplaza el nombre y la rareza de una skin existente.
+
+**Request**
+```
+PUT /api/skins/1
+```
+
+**Body**
+```json
+{
+  "nombre_skin": "Asiimov Dorada",
+  "rareza": "Covert"
 }
 ```
 
@@ -335,78 +381,98 @@ PATCH /api/armas/1/cargador
 ```json
 {
   "id": 1,
-  "nombre": "AK-47",
-  "balas_cargador": 35
-}
-```
-
-**Response 400 Bad Request**
-```json
-{
-  "errores": ["balas_cargador es obligatorio y debe ser un entero > 0."]
+  "id_arma": 1,
+  "nombre_skin": "Asiimov Dorada",
+  "rareza": "Covert"
 }
 ```
 
 ---
 
-## 9. DELETE /armas/:id
+## 16. PATCH /skins/:id/rareza
 
-Elimina un arma. Gracias a `ON DELETE CASCADE`, todas sus skins se eliminan automáticamente.
+Actualiza únicamente la rareza de una skin.
 
 **Request**
 ```
-DELETE /api/armas/3
+PATCH /api/skins/1/rareza
+```
+
+**Body**
+```json
+{
+  "rareza": "Classified"
+}
 ```
 
 **Response 200 OK**
 ```json
 {
-  "message": "Arma \"Glock-18\" eliminada correctamente (skins en cascada)."
-}
-```
-
-**Response 404 Not Found**
-```json
-{
-  "error": "Arma con id 999 no encontrada.",
-  "status": 404
+  "id": 1,
+  "nombre_skin": "Asiimov Dorada",
+  "rareza": "Classified"
 }
 ```
 
 ---
 
-## 10. DELETE /skins/:id
+## 17. PATCH /categorias/:id/descripcion
 
-Elimina una skin por su id. No afecta al arma asociada.
+Actualiza únicamente la descripción de una categoría.
 
 **Request**
 ```
-DELETE /api/skins/1
+PATCH /api/categorias/1/descripcion
+```
+
+**Body**
+```json
+{
+  "descripcion": "Rifles de Counter-Strike 2."
+}
 ```
 
 **Response 200 OK**
 ```json
 {
-  "message": "Skin \"Asiimov\" eliminada correctamente."
-}
-```
-
-**Response 404 Not Found**
-```json
-{
-  "error": "Skin con id 999 no encontrada.",
-  "status": 404
+  "id": 1,
+  "nombre": "Rifles",
+  "descripcion": "Rifles de Counter-Strike 2."
 }
 ```
 
 ---
 
-## Códigos de estado HTTP utilizados
+## 18. DELETE /categorias/:id
 
-| Código | Significado | Cuándo se usa |
-|---|---|---|
-| `200` | OK | GET, PUT, PATCH, DELETE exitosos |
-| `201` | Created | POST exitoso (recurso creado) |
-| `400` | Bad Request | Validación fallida, UNIQUE o CHECK violado |
-| `404` | Not Found | El recurso solicitado no existe |
-| `500` | Internal Server Error | Error inesperado del servidor |
+Elimina una categoría. Impide la eliminación si existen armas vinculadas directamente a la categoría (`ON DELETE RESTRICT`).
+
+**Request**
+```
+DELETE /api/categorias/4
+```
+
+**Response 200 OK**
+```json
+{
+  "message": "Categoría \"Granadas\" eliminada correctamente."
+}
+```
+
+---
+
+## 19. DELETE /subcategorias/:id
+
+Elimina una subcategoría. Las armas que pertenecían a ella seguirán existiendo y vinculadas a su categoría principal, pero con `id_subcategoria = NULL` (`ON DELETE SET NULL`).
+
+**Request**
+```
+DELETE /api/subcategorias/4
+```
+
+**Response 200 OK**
+```json
+{
+  "message": "Subcategoría \"Fusiles de Tirador\" eliminada correctamente."
+}
+```

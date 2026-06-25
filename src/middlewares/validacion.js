@@ -15,12 +15,16 @@ const BANDOS_VALIDOS = ['CT', 'T', 'AM'];
 
 // validarArma — POST /armas y PUT /armas/:id
 const validarArma = (req, res, next) => {
-    const { id_categoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
+    const { id_categoria, id_subcategoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
 
     const errores = [];
 
     if (!id_categoria || isNaN(id_categoria))
         errores.push('id_categoria es obligatorio y debe ser un número.');
+
+    if (id_subcategoria !== undefined && id_subcategoria !== null && (isNaN(id_subcategoria) || Number(id_subcategoria) <= 0)) {
+        errores.push('id_subcategoria debe ser un número entero positivo o null.');
+    }
 
     if (!nombre || typeof nombre !== 'string' || nombre.trim() === '')
         errores.push('nombre es obligatorio y debe ser texto.');
@@ -44,11 +48,14 @@ const validarArma = (req, res, next) => {
     // Persistimos valores limpios en req.body para que el controlador
     // reciba datos ya depurados o limpios sin espacios innecesarios.
     req.body.nombre = nombre.trim();
+    if (id_subcategoria !== undefined) {
+        req.body.id_subcategoria = id_subcategoria === null ? null : Number(id_subcategoria);
+    }
 
     next();
 };
 
-// validarSkin — POST /armas/:id/skins
+// validarSkin — POST /armas/:id/skins y PUT /skins/:id
 const validarSkin = (req, res, next) => {
     const { nombre_skin, rareza } = req.body;
 
@@ -96,7 +103,7 @@ const validarCargador = (req, res, next) => {
     next();
 };
 
-// validarCategoria — PUT /categorias/:id
+// validarCategoria — PUT /categorias/:id y POST /categorias
 const validarCategoria = (req, res, next) => {
     const { nombre, descripcion} = req.body;
     const errores = [];
@@ -122,11 +129,70 @@ const validarCategoria = (req, res, next) => {
     next();
 };
 
+// validarSubcategoria — POST /subcategorias
+const validarSubcategoria = (req, res, next) => {
+    const { id_categoria, nombre, descripcion } = req.body;
+    const errores = [];
+
+    if (!id_categoria || isNaN(id_categoria) || Number(id_categoria) <= 0) {
+        errores.push('id_categoria es obligatorio y debe ser un número entero positivo.');
+    }
+
+    if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
+        errores.push('nombre es obligatorio y debe ser texto.');
+    }
+
+    if (errores.length > 0) {
+        return res.status(400).json({ errores });
+    }
+
+    req.body.nombre = nombre.trim();
+    req.body.descripcion = descripcion ? descripcion.trim() : null;
+
+    next();
+};
+
+// validarRarezaSkin — PATCH /skins/:id/rareza
+const validarRarezaSkin = (req, res, next) => {
+    const { rareza } = req.body;
+    const errores = [];
+
+    if (!rareza || !RAREZAS_VALIDAS.includes(rareza)) {
+        errores.push(`rareza es obligatoria. Valores permitidos: ${RAREZAS_VALIDAS.join(', ')}.`);
+    }
+
+    if (errores.length > 0) {
+        return res.status(400).json({ errores });
+    }
+
+    next();
+};
+
+// validarDescripcionCategoria — PATCH /categorias/:id/descripcion
+const validarDescripcionCategoria = (req, res, next) => {
+    const { descripcion } = req.body;
+    const errores = [];
+
+    if (descripcion === undefined || typeof descripcion !== 'string') {
+        errores.push('descripcion es obligatoria y debe ser texto.');
+    }
+
+    if (errores.length > 0) {
+        return res.status(400).json({ errores });
+    }
+
+    req.body.descripcion = descripcion.trim();
+    next();
+};
+
 
 module.exports = {
     validarArma,
     validarSkin,
     validarPrecio,
     validarCargador,
-    validarCategoria
+    validarCategoria,
+    validarSubcategoria,
+    validarRarezaSkin,
+    validarDescripcionCategoria
 };

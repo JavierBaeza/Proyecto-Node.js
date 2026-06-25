@@ -1,68 +1,61 @@
-// Lógica de negocio y consultas SQL
-// El controlador es responsable ÚNICAMENTE de:
-//   1. Leer los datos validados de req (params, body)
-//   2. Ejecutar la consulta SQL correspondiente
-//   3. Responder con el resultado o delegar el error al manejador global
-//
-// NO valida datos (eso lo hace el middleware) y NO define rutas (eso lo hace
-// el router).
-
 const db = require('../config/db');
-
-// Helper: maneja códigos de error específicos de PostgreSQL.
-// Centraliza la interpretación de errores para no repetirla en cada controlador.
-const manejarErrorPg = (error, next) => {
-    if (error.code === '23505') {
-        const err = new Error('Ya existe un registro con ese nombre.');
-        err.status = 400;
-        return next(err);
-    }
-    if (error.code === '23503') {
-        // FK inválida: id_categoria o id_arma no existe
-        const err = new Error('La referencia (id_categoria o id_arma) no existe.');
-        err.status = 400;
-        return next(err);
-    }
-    if (error.code === '23514') {
-        // Violación de CHECK constraint (bando, rareza, precio negativo, etc.)
-        const err = new Error('Valor inválido para un campo restringido (bando, rareza, precio, etc.).');
-        err.status = 400;
-        return next(err);
-    }
-    next(error);
-};
-
-// Helper: valida que el parámetro :id de la URL sea un entero válido.
-// Evita que queries reciban strings como 'abc' y devuelvan un 500 de PostgreSQL.
-const validarIdParam = (id, next) => {
-    if (isNaN(id) || !Number.isInteger(Number(id)) || Number(id) <= 0) {
-        const err = new Error('El parámetro id debe ser un entero positivo.');
-        err.status = 400;
-        next(err);
-        return false;
-    }
-    return true;
-};
+const { manejarErrorPg, validarIdParam } = require('../utils/dbHelpers');
 
 // GET
-// GET /api/armas — Devuelve todas las armas con el nombre de su categoría
+// GET /api/armas — Devuelve todas las armas con sus categorías, subcategorías y skins
 const getAllArmas = async (req, res, next) => {
     try {
         const result = await db.query(`
             SELECT
                 a.id, a.nombre, a.bando, a.precio,
                 a.dano_base, a.balas_cargador,
-                c.nombre AS categoria
+                c.nombre AS categoria,
+                s.nombre AS subcategoria,
+                a.id_subcategoria,
+                a.id_categoria,
+                sk.id AS skin_id,
+                sk.nombre_skin,
+                sk.rareza
             FROM armas a
             JOIN categorias c ON a.id_categoria = c.id
-            ORDER BY c.nombre, a.nombre
+            LEFT JOIN subcategorias s ON a.id_subcategoria = s.id
+            LEFT JOIN skins sk ON a.id = sk.id_arma
+            ORDER BY c.nombre, s.nombre, a.nombre, sk.rareza
         `);
-        res.status(200).json(result.rows);
+
+        const armasList = [];
+        const armasMap = {};
+        for (const row of result.rows) {
+            if (!armasMap[row.id]) {
+                armasMap[row.id] = {
+                    id: row.id,
+                    nombre: row.nombre,
+                    bando: row.bando,
+                    precio: row.precio,
+                    dano_base: row.dano_base,
+                    balas_cargador: row.balas_cargador,
+                    categoria: row.categoria,
+                    subcategoria: row.subcategoria,
+                    id_subcategoria: row.id_subcategoria,
+                    id_categoria: row.id_categoria,
+                    skins: []
+                };
+                armasList.push(armasMap[row.id]);
+            }
+            if (row.skin_id) {
+                armasMap[row.id].skins.push({
+                    id: row.skin_id,
+                    nombre_skin: row.nombre_skin,
+                    rareza: row.rareza
+                });
+            }
+        }
+
+        res.status(200).json(armasList);
     } catch (error) {
         next(error);
     }
 };
-
 
 // GET /api/armas/:id — Devuelve el detalle de un arma con sus skins
 const getArmaById = async (req, res, next) => {
@@ -71,9 +64,10 @@ const getArmaById = async (req, res, next) => {
         if (!validarIdParam(id, next)) return;
 
         const armaResult = await db.query(
-            `SELECT a.*, c.nombre AS categoria
+            `SELECT a.*, c.nombre AS categoria, s.nombre AS subcategoria
              FROM armas a
              JOIN categorias c ON a.id_categoria = c.id
+             LEFT JOIN subcategorias s ON a.id_subcategoria = s.id
              WHERE a.id = $1`,
             [id]
         );
@@ -102,38 +96,13 @@ const getArmaById = async (req, res, next) => {
 // POST /api/armas — Crea una nueva arma
 const createArma = async (req, res, next) => {
     try {
-        // nombre.trim() ya fue persistido en el middleware de validación
-        const { id_categoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
+        const { id_categoria, id_subcategoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
 
         const result = await db.query(
-            `INSERT INTO armas (id_categoria, nombre, bando, precio, dano_base, balas_cargador)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO armas (id_categoria, id_subcategoria, nombre, bando, precio, dano_base, balas_cargador)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [id_categoria, nombre, bando, precio, dano_base, balas_cargador]
-        );
-
-        res.status(201).json(result.rows[0]);
-    } catch (error) {
-        manejarErrorPg(error, next);
-    }
-};
-
-// POST /api/armas/:id/skins — Crea una skin vinculada a un arma existente
-const createSkin = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        if (!validarIdParam(id, next)) return;
-
-        const { nombre_skin, rareza } = req.body;
-
-        // No hacemos SELECT previo para verificar el arma:
-        // la FK de la tabla skins lanza código 23503 si id_arma no existe,
-        // y manejarErrorPg lo convierte en un 400 descriptivo.
-        const result = await db.query(
-            `INSERT INTO skins (id_arma, nombre_skin, rareza)
-             VALUES ($1, $2, $3)
-             RETURNING *`,
-            [id, nombre_skin, rareza]
+            [id_categoria, id_subcategoria !== undefined ? id_subcategoria : null, nombre, bando, precio, dano_base, balas_cargador]
         );
 
         res.status(201).json(result.rows[0]);
@@ -149,47 +118,19 @@ const replaceArma = async (req, res, next) => {
         const { id } = req.params;
         if (!validarIdParam(id, next)) return;
 
-        const { id_categoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
+        const { id_categoria, id_subcategoria, nombre, bando, precio, dano_base, balas_cargador } = req.body;
 
         const result = await db.query(
             `UPDATE armas
-             SET id_categoria=$1, nombre=$2, bando=$3,
-                 precio=$4, dano_base=$5, balas_cargador=$6
-             WHERE id=$7
+             SET id_categoria=$1, id_subcategoria=$2, nombre=$3, bando=$4,
+                 precio=$5, dano_base=$6, balas_cargador=$7
+             WHERE id=$8
              RETURNING *`,
-            [id_categoria, nombre, bando, precio, dano_base, balas_cargador, id]
+            [id_categoria, id_subcategoria !== undefined ? id_subcategoria : null, nombre, bando, precio, dano_base, balas_cargador, id]
         );
 
         if (result.rowCount === 0) {
             const err = new Error(`Arma con id ${id} no encontrada.`);
-            err.status = 404;
-            return next(err);
-        }
-
-        res.status(200).json(result.rows[0]);
-    } catch (error) {
-        manejarErrorPg(error, next);
-    }
-};
-
-// PUT /api/categorias/:id — Reemplaza todos los campos de una categoría
-const replaceCategoria = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        if (!validarIdParam(id, next)) return;
-
-        const { nombre, descripcion } = req.body;
-
-        const result = await db.query(
-            `UPDATE categorias
-             SET nombre=$1, descripcion=$2
-             WHERE id=$3
-             RETURNING *`,
-            [nombre, descripcion || null, id]
-        );
-
-        if (result.rowCount === 0) {
-            const err = new Error(`Categoría con id ${id} no encontrada.`);
             err.status = 404;
             return next(err);
         }
@@ -226,7 +167,6 @@ const updatePrecio = async (req, res, next) => {
         next(error);
     }
 };
-
 
 // PATCH /api/armas/:id/cargador — Modifica únicamente las balas del cargador
 const updateCargador = async (req, res, next) => {
@@ -280,41 +220,12 @@ const deleteArma = async (req, res, next) => {
     }
 };
 
-// DELETE /api/skins/:id — Elimina una skin por su id
-const deleteSkin = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        if (!validarIdParam(id, next)) return;
-
-        const result = await db.query(
-            'DELETE FROM skins WHERE id=$1 RETURNING id, nombre_skin',
-            [id]
-        );
-
-        if (result.rowCount === 0) {
-            const err = new Error(`Skin con id ${id} no encontrada.`);
-            err.status = 404;
-            return next(err);
-        }
-
-        res.status(200).json({
-            message: `Skin "${result.rows[0].nombre_skin}" eliminada correctamente.`
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-
 module.exports = {
     getAllArmas,
     getArmaById,
     createArma,
-    createSkin,
     replaceArma,
-    replaceCategoria,
     updatePrecio,
     updateCargador,
-    deleteArma,
-    deleteSkin
+    deleteArma
 };

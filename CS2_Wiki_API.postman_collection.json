@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "CS2 Wiki API",
-		"description": "Colección completa para probar los 10 endpoints de la CS2 Wiki.",
+		"description": "Colección completa para probar los 19 endpoints de la CS2 Wiki.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -28,7 +28,7 @@
 								"armas"
 							]
 						},
-						"description": "Devuelve todas las armas con su categoría (JOIN). Esperado: 200 OK + array de armas."
+						"description": "Devuelve todas las armas con su categoría y subcategoría. Esperado: 200 OK + array de armas."
 					}
 				},
 				{
@@ -45,7 +45,40 @@
 								"1"
 							]
 						},
-						"description": "Devuelve el detalle de un arma con sus skins. Cambia el '1' por otro id para probar. Esperado: 200 OK. Con id inexistente: 404."
+						"description": "Devuelve el detalle de un arma con sus skins. Esperado: 200 OK."
+					}
+				},
+				{
+					"name": "11. GET todas las categorías con cantidades de armas",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categorias"
+							]
+						},
+						"description": "Devuelve todas las categorías registradas junto a la cantidad de armas asociadas a cada una."
+					}
+				},
+				{
+					"name": "12. GET subcategorías con respectivas armas",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/subcategorias/armas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"subcategorias",
+								"armas"
+							]
+						},
+						"description": "Devuelve la lista de subcategorías con sus armas asociadas."
 					}
 				}
 			]
@@ -74,14 +107,14 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"AWP\",\n  \"bando\": \"AM\",\n  \"precio\": 4750,\n  \"dano_base\": 115,\n  \"balas_cargador\": 10\n}",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"id_subcategoria\": 1,\n  \"nombre\": \"AWP\",\n  \"bando\": \"AM\",\n  \"precio\": 4750,\n  \"dano_base\": 115,\n  \"balas_cargador\": 10\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Crea una nueva arma. Esperado: 201 Created + objeto del arma creada.\n\nPruebas adicionales:\n- Omite un campo → debe responder 400 con lista de errores\n- Repite el mismo nombre → debe responder 400 UNIQUE violation\n- Usa id_categoria inexistente → debe responder 400 FK violation\n- Usa bando inválido (ej: 'X') → debe responder 400"
+						"description": "Crea una nueva arma (opcionalmente asociada a una id_subcategoria)."
 					}
 				},
 				{
@@ -114,7 +147,69 @@
 								}
 							}
 						},
-						"description": "Crea una skin vinculada al arma con id=1. Cambia el id en la URL según necesites.\n\nPruebas adicionales:\n- Usa rareza inválida (ej: 'Legendaria') → debe responder 400\n- Usa id de arma inexistente (ej: /armas/999/skins) → debe responder 404"
+						"description": "Crea una skin vinculada al arma con id=1."
+					}
+				},
+				{
+					"name": "13. POST crear categoría",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categorias"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Granadas\",\n  \"descripcion\": \"Equipamiento arrojadizo táctico y utilidades.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Crea una nueva categoría."
+					}
+				},
+				{
+					"name": "14. POST crear subcategoría",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/subcategorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"subcategorias"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"Rifles de Francotirador Especiales\",\n  \"descripcion\": \"Fusiles de alta precisión para combate a distancia.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Crea una nueva subcategoría vinculada a una categoría."
 					}
 				}
 			]
@@ -144,14 +239,14 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"id_categoria\": 1,\n  \"nombre\": \"AK-47\",\n  \"bando\": \"T\",\n  \"precio\": 2900,\n  \"dano_base\": 36,\n  \"balas_cargador\": 30\n}",
+							"raw": "{\n  \"id_categoria\": 1,\n  \"id_subcategoria\": 1,\n  \"nombre\": \"AK-47\",\n  \"bando\": \"T\",\n  \"precio\": 2900,\n  \"dano_base\": 36,\n  \"balas_cargador\": 30\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Reemplaza TODOS los campos del arma. Si omites algún campo, el middleware responde 400. Esperado: 200 OK + arma actualizada."
+						"description": "Reemplaza todos los campos del arma con id=1."
 					}
 				},
 				{
@@ -176,14 +271,46 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Rifles de Asalto\",\n  \"descripcion\": \"Rifles de alta potencia para combate a media y larga distancia.\"\n}",
+							"raw": "{\n  \"nombre\": \"Rifles de Asalto Modificados\",\n  \"descripcion\": \"Rifles de alta potencia para combate a media y larga distancia.\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"description": "Reemplaza nombre y descripción de una categoría. Esperado: 200 OK + categoría actualizada."
+						"description": "Reemplaza nombre y descripción de una categoría."
+					}
+				},
+				{
+					"name": "15. PUT reemplazar skin",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/skins/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"skins",
+								"1"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre_skin\": \"Asiimov Dorada\",\n  \"rareza\": \"Covert\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Actualiza el nombre y rareza de una skin."
 					}
 				}
 			]
@@ -221,7 +348,7 @@
 								}
 							}
 						},
-						"description": "Modifica SOLO el precio del arma. El resto de campos permanece intacto.\n\nPruebas adicionales:\n- Envía precio negativo (ej: -100) → debe responder 400\n- Omite el campo precio → debe responder 400"
+						"description": "Modifica solo el precio del arma."
 					}
 				},
 				{
@@ -254,7 +381,73 @@
 								}
 							}
 						},
-						"description": "Modifica SOLO las balas_cargador del arma. El resto permanece intacto.\n\nPrueba adicional:\n- Envía balas_cargador = 0 → debe responder 400"
+						"description": "Modifica solo las balas_cargador del arma."
+					}
+				},
+				{
+					"name": "16. PATCH actualizar rareza de skin",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/skins/1/rareza",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"skins",
+								"1",
+								"rareza"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rareza\": \"Classified\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Actualiza la rareza de una skin."
+					}
+				},
+				{
+					"name": "17. PATCH actualizar descripción de categoría",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categorias/1/descripcion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categorias",
+								"1",
+								"descripcion"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"descripcion\": \"Nueva descripción corta de la categoría.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Actualiza la descripción de una categoría."
 					}
 				}
 			]
@@ -276,7 +469,7 @@
 								"3"
 							]
 						},
-						"description": "Elimina el arma con id=3 y sus skins en cascada (ON DELETE CASCADE).\n⚠️ Usa un id que exista. Tras ejecutarlo, haz GET /armas para confirmar.\nEsperado: 200 OK + mensaje de confirmación.\nCon id inexistente: 404."
+						"description": "Elimina un arma por su ID."
 					}
 				},
 				{
@@ -293,7 +486,41 @@
 								"1"
 							]
 						},
-						"description": "Elimina la skin con id=1. Solo borra la skin, no el arma.\nEsperado: 200 OK + mensaje de confirmación.\nCon id inexistente: 404."
+						"description": "Elimina una skin por su ID."
+					}
+				},
+				{
+					"name": "18. DELETE eliminar categoría",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/categorias/4",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categorias",
+								"4"
+							]
+						},
+						"description": "Elimina una categoría. Lanza error 400 FK Restrict si tiene armas vinculadas directamente."
+					}
+				},
+				{
+					"name": "19. DELETE eliminar subcategoría",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/subcategorias/4",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"subcategorias",
+								"4"
+							]
+						},
+						"description": "Elimina una subcategoría por su ID."
 					}
 				}
 			]

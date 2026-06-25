@@ -11,7 +11,14 @@ app.use(express.json()); // Parsea bodies JSON en todas las rutas
 
 // Rutas
 const armasRouter = require('./routes/armas');
+const categoriasRouter = require('./routes/categorias');
+const subcategoriasRouter = require('./routes/subcategorias');
+const skinsRouter = require('./routes/skins');
+
 app.use('/api', armasRouter);
+app.use('/api', categoriasRouter);
+app.use('/api', subcategoriasRouter);
+app.use('/api', skinsRouter);
 
 // Por acá tenemos un manejador global de errores que debe ir SIEMPRE al final, después de las rutas.
 // En Express, un middleware con 4 parámetros (err, req, res, next) se convierte
@@ -35,9 +42,11 @@ app.use((err, req, res, next) => {
 });
 
 // Arranque del servidor
-app.listen(PORT, () => {
-    console.log(`CS2 Wiki API corriendo en http://localhost:${PORT}`);
-    console.log(`Endpoints disponibles bajo: http://localhost:${PORT}/api`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`CS2 Wiki API corriendo en http://localhost:${PORT}`);
+        console.log(`Endpoints disponibles bajo: http://localhost:${PORT}/api`);
+    });
+}
 
 module.exports = app;

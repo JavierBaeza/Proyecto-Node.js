@@ -9,10 +9,25 @@ CREATE TABLE IF NOT EXISTS categorias (
     descripcion TEXT
 );
 
+CREATE TABLE IF NOT EXISTS subcategorias (
+    id            SERIAL          PRIMARY KEY,
+    id_categoria  INTEGER         NOT NULL,
+    nombre        VARCHAR(50)     NOT NULL UNIQUE,
+    descripcion   TEXT,
+
+    CONSTRAINT fk_subcategoria_categoria
+        FOREIGN KEY (id_categoria)
+        REFERENCES categorias(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_subcategoria_id_categoria
+        UNIQUE (id, id_categoria)
+);
 
 CREATE TABLE IF NOT EXISTS armas (
     id              SERIAL          PRIMARY KEY,
     id_categoria    INTEGER         NOT NULL,
+    id_subcategoria INTEGER,
     nombre          VARCHAR(100)    NOT NULL UNIQUE,
     bando           VARCHAR(2)      NOT NULL,
     precio          NUMERIC(8,2)    NOT NULL,
@@ -23,6 +38,11 @@ CREATE TABLE IF NOT EXISTS armas (
         FOREIGN KEY (id_categoria)
         REFERENCES categorias(id)
         ON DELETE RESTRICT,
+
+    CONSTRAINT fk_arma_subcategoria_categoria
+        FOREIGN KEY (id_subcategoria, id_categoria)
+        REFERENCES subcategorias(id, id_categoria)
+        ON DELETE SET NULL (id_subcategoria),
 
     CONSTRAINT chk_bando
         CHECK (bando IN ('CT', 'T', 'AM')),
@@ -67,10 +87,16 @@ INSERT INTO categorias (nombre, descripcion) VALUES
     ('Subfusiles', 'SMGs económicas con alta cadencia. Ideales en pistol rounds o force buys.')
 ON CONFLICT (nombre) DO NOTHING;
 
-INSERT INTO armas (id_categoria, nombre, bando, precio, dano_base, balas_cargador) VALUES
-    ((SELECT id FROM categorias WHERE nombre = 'Rifles'),    'AK-47',   'T',  2700.00, 36, 30),
-    ((SELECT id FROM categorias WHERE nombre = 'Rifles'),    'M4A4',    'CT', 3100.00, 33, 30),
-    ((SELECT id FROM categorias WHERE nombre = 'Pistolas'),  'Glock-18','T',   200.00, 28, 20)
+INSERT INTO subcategorias (id_categoria, nombre, descripcion) VALUES
+    ((SELECT id FROM categorias WHERE nombre = 'Rifles'), 'Rifles de Asalto', 'Rifles automáticos para combate de medio alcance.'),
+    ((SELECT id FROM categorias WHERE nombre = 'Rifles'), 'Rifles de Francotirador', 'Rifles de precisión para largo alcance.'),
+    ((SELECT id FROM categorias WHERE nombre = 'Pistolas'), 'Pistolas Semiautomáticas', 'Pistolas estándar de disparo semiautomático.')
+ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO armas (id_categoria, id_subcategoria, nombre, bando, precio, dano_base, balas_cargador) VALUES
+    ((SELECT id FROM categorias WHERE nombre = 'Rifles'), (SELECT id FROM subcategorias WHERE nombre = 'Rifles de Asalto'), 'AK-47',   'T',  2700.00, 36, 30),
+    ((SELECT id FROM categorias WHERE nombre = 'Rifles'), (SELECT id FROM subcategorias WHERE nombre = 'Rifles de Asalto'), 'M4A4',    'CT', 3100.00, 33, 30),
+    ((SELECT id FROM categorias WHERE nombre = 'Pistolas'), (SELECT id FROM subcategorias WHERE nombre = 'Pistolas Semiautomáticas'), 'Glock-18','T',   200.00, 28, 20)
 ON CONFLICT (nombre) DO NOTHING;
 
 INSERT INTO skins (id_arma, nombre_skin, rareza) VALUES
