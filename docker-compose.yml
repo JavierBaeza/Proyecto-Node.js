@@ -19,7 +19,7 @@ services:
       # Persistencia de datos: aunque el contenedor se detenga, los datos sobreviven
       - postgres_data:/var/lib/postgresql/data
       # Script de inicialización: se ejecuta automáticamente la primera vez
-      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}" ]
       interval: 5s
@@ -29,17 +29,37 @@ services:
   # Servicio: API Node.js
 
   app:
-    build: . # Construye la imagen desde el Dockerfile en la raíz
+    build:
+      context: ./backend
+      target: development
     container_name: cs2_wiki_app
     restart: unless-stopped
     ports:
       - "${PORT}:${PORT}" # La API estará en http://localhost:3000
     env_file: 
       - .env # Carga las variables de entorno desde el archivo .env
-     
+    volumes:
+      - ./backend:/app              # Sincroniza el código local para activar nodemon ante cambios
+      - /app/node_modules   # Evita sobreescribir las dependencias compiladas dentro de Linux Alpine
     depends_on:
       db:
         condition: service_healthy # Espera a que PostgreSQL esté listo antes de iniciar la app
+
+  # Servicio: React / Vite (Frontend)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: cs2_wiki_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173" # Expone el servidor de desarrollo de Vite al puerto 5173 del host
+    environment:
+      - VITE_API_TARGET=http://app:3000 # Apunta al contenedor backend en la red interna de Docker
+    volumes:
+      - ./frontend:/app             # Sincroniza los archivos locales para live-reload
+      - /app/node_modules           # Evita sobreescribir dependencias con las de Windows
+    depends_on:
+      - app                         # Espera a que el backend se levante primero
 
 # Volumen nombrado para persistir los datos de PostgreSQL
 volumes:
