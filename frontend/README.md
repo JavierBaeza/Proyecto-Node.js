@@ -1,7 +1,5 @@
 
-  # Wiki Dashboard para CS2
-
-  This is a code bundle for Wiki Dashboard para CS2. The original project is available at https://www.figma.com/design/KJj4JGmbU3xsAiWabFDu4D/Wiki-Dashboard-para-CS2.
+  # Wiki  para CounterStrike-2
 
   ## Running the code
 
