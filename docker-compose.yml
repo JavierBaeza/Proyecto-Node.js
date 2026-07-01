@@ -41,6 +41,17 @@ services:
       db:
         condition: service_healthy # Espera a que PostgreSQL esté listo antes de iniciar la app
 
+  # Servicio: Frontend React/Vite (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: cs2_wiki_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT}:80" # Expone el frontend en el puerto configurado en el .env
+    depends_on:
+      - app
+
 # Volumen nombrado para persistir los datos de PostgreSQL
 volumes:
   postgres_data:
